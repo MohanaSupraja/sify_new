@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "sylvie-dynamic-pricing",
+  "private_key_id": "b5620d51f78ccf271a1a952d498720f00812241b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCtEoFpMjziHFyd\ngbZ8xN9lqwt97ye9gehF+6X8M94j7fZnH+Xh7qPs395RSP+O6PECSC4u98dBD8Ko\nZI9OkLFQGTKh0sF6hjSkd3GPO+Of5xCJxONAHWY+09BGz3dBvhbc3K07xViLq3+b\nrb+c3URfdCI4U7L500Uxv/SNJuIWZnTseiD2BJmnmUR9souoCi6S46lf9G2YxsX1\nPnBbGyDDf7In0UfPA9K2U7xqDVxgzC8oiQdHavavo3xkk2pSMrdoRXpmEc2xBzT6\n0kLViI6iFbkkUIGVooj40n4XuZMnY6kzA7MyCy+ScuCD0Jwh8esk/ARNC4wefD2T\neN6zWHEtAgMBAAECggEAAtJLnDFreKwwF++mnL+0FjsE0IrDjrCKRTz/zO3ziYmc\nyLv//WaGJmhuSv9YdM+RwXdeLJNxgu5rPl+Igb/Ht2yRvL2fPD+2P/zw5v4TWebK\n1QdWq3ocBQFi/D4jM/krWj8ziJPqogXe6kszPBVtwrib9JsfG2xSs0FT27E6++55\nihD9O96gDlE5bJab2zOt5IitY/ty2CwVjQxV8qAbQtcwyK2o8Sm3HnMUx4OINDZL\nPl29U7foEBMzMkR6j0W5jhXH1fk2djDHWkQNrEfdqCHnKrJLHzCbBb/R0bgvqFoU\nX7QoA9oHDhROq2gOncvVYa1HNfZ3+V7YI+pt/w96aQKBgQDw+Ijuvig0os4igbon\nWteyXKrXUd2mJVlpCCvm0iTsi9eh/jxRwOLsf3fFKLYBhRijDWyBu1kNVWbgUtcE\nH0mh5xQALHJxmmtYkIqimFv94sPWeXQoMxF2cLyaNAwX/EtbhliiGIRDM1lD4Tl4\nGt5k9Xus1yochzDUNi/Lnwn2ewKBgQC33d4A2CVyHYCIMvobN75Y49nbYrXHQRQB\nstOFR3yzXhPhziLORjtI5PXWPPQgvfdYAAoY5NBPhuKYRGtngSWmqI2BwoY9dx1D\nrTm+QQXDcwmYVyBYpW953M0/b2rTsgLBmiOcQ38iZuuebcw7o/Ya9RHodohQ3RCV\np22cvO06dwKBgQDtwOqqVGiq9m9YUJLxPYpQa2oMpLOCuJstLGjUh0bzNU7+gC/X\noe7D1UjA+NgLS9zxE8+ZeNX2d+rXLiUD5jLqUWrEeRY5zFhZu9NtddJd/52mQZNA\nDpMOP1F2/B9qkv1vQnC1DmeBPmq2tMPVIv2Gs0bhVDIyj5i36PbjevmDfQKBgA8X\nS7hgBTrHhxwmqvZ+7cWX9fKWuHrBMaYuCkRfKLIEH7eh1qN9ijIicLcDy7nAPcPg\nRPPkG+DbHlAHFZWqOO/j17F1yNTUqPc8CYg/B/0RvRDe3c3Izkx/Pe1d9LOpYaaI\nQzH5LD8jmWUod+HRRErUIIMm72tLqafO1SVPMF1jAoGAQYrQdSVgbtfWFnk8QTSU\nfIBahni+TuEKRvdRqZ09hduxe0GMiiHPPFqqFj8woYqgc3XuRzPcT7REwl8zSrFG\ny9Jtu4xjeGCOQWkxQ64acmqcvBZNQ3KT+3MCsTHZ28QaCVCqx5jiyT1f6JJ4QPjO\nG19HSfLLtPcyR/hZilri3EM=\n-----END PRIVATE KEY-----\n",
+  "client_email": "sylvie-dynamic-pricing@appspot.gserviceaccount.com",
+  "client_id": "106499804749250305589",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sylvie-dynamic-pricing%40appspot.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
