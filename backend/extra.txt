@@ -1,0 +1,597 @@
+app.post('/fetch-lastid', authenticateToken, authorizeRoles('Admin', 'User', 'Developer'), async (req, res) => {
+  const { tabIndex, currentPage, categorySearch, label, searchQuery } = req.body;
+  console.log(tabIndex, currentPage, categorySearch, label, searchQuery)
+  let results = [];
+  try {
+    let query;
+    let productCollection;
+    if (label === "Well Worn") {
+      productCollection = firestore.collection('products');
+      query = productCollection.where("source_id", "==", 2)
+    } else {
+      productCollection = firestore.collection('sylvie_products');
+      query = productCollection.where("websiteName", "==", label)
+    }
+    console.log("DATETIME:", dayjs().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'))
+    const limit = 10;
+    // console.log("query:", label)
+    if (categorySearch) {
+      // console.log("category:", categorySearch)
+      if (label == 'Well Worn') {
+        query = query.where("Category", ">=", categorySearch);
+      }
+      else {
+        query = query.where("category", ">=", categorySearch);
+      }
+      if (searchQuery) {
+        if (label == 'Well Worn') {
+          query = query.where("Name", "==", searchQuery);
+        }
+        else {
+          query = query.where("name", "==", searchQuery);
+        }
+      }
+
+    }
+
+    else {
+      if (searchQuery) {
+        if (label == 'Well Worn') {
+          query = query.where("Name", "==", searchQuery);
+        }
+        else {
+          query = query.where("name", "==", searchQuery);
+        }
+      }
+      query = query.orderBy("id");
+    }
+    const countSnapshot = await query.count().get();
+    const length = countSnapshot.data().count;
+    console.log("received length", length);
+
+    if (currentPage > 1) {
+      const previousSnapshot = await query.limit((currentPage - 1) * limit).get();
+      if (previousSnapshot.docs.length > 0) {
+        const lastVisible = previousSnapshot.docs[previousSnapshot.docs.length - 1];
+        query = query.startAfter(lastVisible);
+      }
+    }
+
+
+    const snapshot = await query.limit(limit).get();
+
+    if (!snapshot.empty) {
+      results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+    // console.log("results:",results)
+    res.status(200).json({ documents: results, length: length });
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    res.status(500).json({ error: 'Failed to fetch documents' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+app.put('/update-subcategory', async (req, res) => {
+  const { uid, subcategory } = req.body;
+
+  try {
+    // console.log(uid, subcategory)
+    const docRef = firestore.collection('products').doc(uid);
+    await docRef.update({ SubCategory: subcategory });
+    res.status(200).json({ message: 'Sub Category updated successfully' });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update Sub Category' });
+  }
+});
+
+app.get('/get-category', async (req, res) => {
+  try {
+    let query = firestore.collection('categories');
+    const snapshot = await query.get();
+    const data = [];
+    snapshot.forEach(doc => {
+      data.push({ id: doc.id, ...doc.data() });
+    });
+    res.json(data);
+    // console.log("received");
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
+
+app.post('/add-category', async (req, res) => {
+  const { category } = req.body;
+  // console.log("add category : ", category)
+  const Category = category.trim().charAt(0).toUpperCase() + category.trim().slice(1).toLowerCase();
+
+  const categoriesDocRef = firestore.collection('categories2').doc('categoriesDoc');
+
+  try {
+    // Update the document by appending the new category to the existing categories array
+    await categoriesDocRef.update({
+      categories: Firestore.FieldValue.arrayUnion(Category)
+    });
+
+    res.status(200).json({ message: 'Category added successfully' });
+  } catch (error) {
+    console.error('Error adding category:', error);
+    res.status(500).json({ error: 'Failed to add category' });
+  }
+});
+
+app.post('/remove-category', async (req, res) => {
+  const { category } = req.body;
+  const categoriesDocRef = firestore.collection('categories2').doc('categoriesDoc');
+  const productsCollectionRef = firestore.collection('products');
+
+  try {
+    const querySnapshot = await productsCollectionRef.where('Category', '==', category).get();
+    const productCount = querySnapshot.size;
+
+    if (productCount > 0) {
+      res.status(200).json({ message: `Cannot remove "${category}" as ${productCount} products are associated with it` });
+      // console.log(`Cannot remove category "${category}" because it is associated with ${productCount} products`);
+    }
+    else {
+      await categoriesDocRef.update({
+        categories: Firestore.FieldValue.arrayRemove(category)
+      });
+
+      res.status(200).json({ message: 'Category removed successfully' });
+    }
+  }
+  catch (error) {
+    console.error('Error removing category:', error);
+    res.status(500).json({ error: 'Failed to remove category' });
+  }
+});
+
+app.post('/add-subcategory', async (req, res) => {
+  const { category, subcategory } = req.body;
+  const Subcategory = subcategory.trim().charAt(0).toUpperCase() + subcategory.trim().slice(1).toLowerCase();
+
+  const categoriesDocRef = firestore.collection('subcategories2').doc(category);
+
+  try {
+    // Get the document with the ID matching the category
+    const doc = await categoriesDocRef.get();
+
+    if (!doc.exists) {
+      // If the document does not exist, create it with the new category and subcategory
+      await categoriesDocRef.set({ subcategories: [Subcategory] });
+    } else {
+      // If the document exists, update the existing category's subcategories array
+      const data = doc.data();
+      if (data.subcategories) {
+        // Add the new subcategory to it, avoiding duplicates
+        if (!data.subcategories.includes(Subcategory)) {
+          data.subcategories.push(Subcategory);
+        }
+      } else {
+        // If subcategories array does not exist, create it with the new subcategory
+        data.subcategories = [Subcategory];
+      }
+
+      // Update the document with the new data
+      await categoriesDocRef.update(data);
+    }
+
+    res.status(200).json({ message: 'Subcategory added successfully' });
+  } catch (error) {
+    console.error('Error adding subcategory:', error);
+    res.status(500).json({ error: 'Failed to add subcategory' });
+  }
+});
+app.post('/remove-subcategory', async (req, res) => {
+  const { category, subcategory } = req.body;
+  const categoriesDocRef = firestore.collection('subcategories2').doc(category);
+  const productsCollectionRef = firestore.collection('products');
+
+  try {
+    const querySnapshot = await productsCollectionRef.where('SubCategory', '==', subcategory).get();
+    // console.log(querySnapshot.docs[0])
+    const productCount = querySnapshot.size;
+    // console.log(productCount)
+
+    if (productCount > 0) {
+      // console.log(`Cannot remove category "${subcategory}" because it is associated with ${productCount} products`);
+      res.status(200).json({ message: `Cannot remove "${subcategory}" as ${productCount} products are associated with it` });
+    }
+    else {
+      await categoriesDocRef.update({
+        subcategories: Firestore.FieldValue.arrayRemove(subcategory)
+      });
+      res.status(200).json({ message: 'Subcategory removed successfully' });
+    }
+
+    // Respond with success message
+
+
+  } catch (error) {
+    console.error('Error removing subcategory:', error);
+    return res.status(500).json({ error: 'Failed to remove subcategory' });
+  }
+});
+
+
+
+app.post('/add-categories', async (req, res) => {
+  const productCollection = firestore.collection('products');
+  const categoriesDocRef = firestore.collection('categories2').doc('categoriesDoc'); // Use a specific document ID
+
+  try {
+    // Fetch distinct categories from the products collection
+    const categorySnapshot = await productCollection.select('Category').get();
+    let categories = [];
+    categorySnapshot.forEach(doc => {
+      const category = doc.data().Category;
+      if (category && !categories.includes(category)) {
+        categories.push(category);
+      }
+    });
+
+    // Sort categories alphabetically
+    categories.sort();
+
+    const docSnapshot = await categoriesDocRef.get();
+
+    if (!docSnapshot.exists) {
+      // If the document doesn't exist, create it with the initial set of categories
+      await categoriesDocRef.set({ categories });
+      return res.status(200).json({ message: 'Categories added successfully' });
+    } else {
+      // If the document exists, merge new categories with existing ones
+      const existingCategories = docSnapshot.data().categories;
+
+      // Filter out duplicates
+      const newCategories = categories.filter(category => !existingCategories.includes(category));
+
+      if (newCategories.length > 0) {
+        // Add new categories to the existing list
+        const updatedCategories = existingCategories.concat(newCategories).sort(); // Sort categories alphabetically
+        await categoriesDocRef.update({ categories: updatedCategories });
+
+        return res.status(200).json({ message: 'New categories added successfully' });
+      } else {
+        return res.status(400).json({ error: 'No new categories to add' });
+      }
+    }
+  } catch (error) {
+    console.error('Error adding categories:', error);
+    return res.status(500).json({ error: 'Failed to add categories' });
+  }
+});
+
+app.post('/add-subcategories', async (req, res) => {
+  const productCollection = firestore.collection('products');
+  const subcategoriesCollection = firestore.collection('subcategories2');
+
+  try {
+    // Fetch all documents from the products collection
+    const productSnapshot = await productCollection.get();
+    let subcategories = {};
+
+    productSnapshot.forEach(doc => {
+      const { Category, SubCategory } = doc.data();
+      if (Category && SubCategory) {
+        if (!subcategories[Category]) {
+          subcategories[Category] = new Set();
+        }
+        subcategories[Category].add(SubCategory);
+      }
+    });
+
+    // Convert Sets to Arrays and sort them
+    for (const category in subcategories) {
+      subcategories[category] = Array.from(subcategories[category]).sort();
+    }
+
+    // Update Firestore with the new subcategories
+    for (const [category, subs] of Object.entries(subcategories)) {
+      const subcategoriesDocRef = subcategoriesCollection.doc(category);
+      const docSnapshot = await subcategoriesDocRef.get();
+
+      if (!docSnapshot.exists) {
+        // If the document does not exist, create it with the new subcategories
+        await subcategoriesDocRef.set({ subcategories: subs });
+      } else {
+        // If the document exists, merge new subcategories with existing ones
+        const existingSubcategories = docSnapshot.data().subcategories;
+
+        // Convert existing subcategories to Set to remove duplicates
+        const existingSubcategoriesSet = new Set(existingSubcategories);
+
+        // Filter out duplicates from the new subcategories and convert to Set
+        const newSubcategoriesSet = new Set(subs.filter(sub => !existingSubcategoriesSet.has(sub)));
+
+        // Combine existing and new subcategories Sets and convert back to Array
+        const updatedSubcategories = [...existingSubcategoriesSet, ...newSubcategoriesSet];
+
+        // Update Firestore document with merged subcategories
+        await subcategoriesDocRef.set({ subcategories: updatedSubcategories.sort() });
+      }
+    }
+
+    return res.status(200).json({ message: 'Subcategories added/updated successfully' });
+  } catch (error) {
+    console.error('Error adding subcategories:', error);
+    return res.status(500).json({ error: 'Failed to add subcategories' });
+  }
+});
+
+
+
+app.get('/get-categories', async (req, res) => {
+
+  try {
+    let query = firestore.collection('categories2');
+    const snapshot = await query.get();
+    const data = [];
+    snapshot.forEach(doc => {
+      data.push({ id: doc.id, ...doc.data() });
+    });
+    // console.log("received cat::", data);
+    let allCategories = data.reduce((acc, curr) => {
+      return acc.concat(curr.categories);
+    }, []);
+
+    // Sorting categories in ascending order by name
+    allCategories.sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+
+    // console.log("Received categories:", allCategories);
+    res.json(allCategories);
+
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ error: 'Failed to fetch category' });
+  }
+})
+app.get('/get-subcategories', async (req, res) => {
+
+  try {
+    let query = firestore.collection('subcategories2');
+    const snapshot = await query.get();
+    const data = [];
+    snapshot.forEach(doc => {
+      const subcategories = doc.data().subcategories.sort();
+      data.push({ id: doc.id, subcategories });
+    });
+
+    // console.log("received sub cat::", data);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching subcategories:', error);
+    res.status(500).json({ error: 'Failed to fetch sub category' });
+  }
+})
+app.put('/update-category', async (req, res) => {
+  const { uid, category } = req.body;
+  const productsCollectionRef = firestore.collection('products');
+
+  try {
+    // Query the collection for the document with the matching uid
+    const querySnapshot = await productsCollectionRef.where('uid', '==', uid).get();
+
+    if (querySnapshot.empty) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    // Get the document (there should only be one document due to unique uid)
+    const doc = querySnapshot.docs[0];
+
+    // Update the document with the new category
+    await doc.ref.update({ Category: category });
+
+    res.status(200).json({ message: 'Category updated successfully' });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+app.put('/update-subcategory', async (req, res) => {
+  const { uid, subcategory } = req.body;
+  const productsCollectionRef = firestore.collection('products');
+
+  try {
+    // Query the collection for the document with the matching uid
+    const querySnapshot = await productsCollectionRef.where('uid', '==', uid).get();
+
+    if (querySnapshot.empty) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    // Get the document (there should only be one document due to unique uid)
+    const doc = querySnapshot.docs[0];
+
+    // Update the document with the new category
+    await doc.ref.update({ SubCategory: subcategory });
+
+    res.status(200).json({ message: 'SubCategory updated successfully' });
+  } catch (error) {
+    console.error('Error updating sub category:', error);
+    res.status(500).json({ error: 'Failed to update sub category' });
+  }
+});
+
+app.put('/edit-category', async (req, res) => {
+  const { oldCategory, newCategory } = req.body;
+  // console.log("old and new:", oldCategory, newCategory)
+  const categoriesDocId = 'categoriesDoc'; // The ID of the document containing the categories array
+  const productsCollectionRef = firestore.collection('categories2').doc(categoriesDocId);
+  try {
+    const doc = await productsCollectionRef.get();
+    if (!doc.exists) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+    let { categories } = doc.data();
+    const categoryIndex = categories.indexOf(oldCategory);
+
+    if (categoryIndex === -1) {
+      res.status(404).json({ error: 'Category not found' });
+      return;
+    }
+    categories[categoryIndex] = newCategory;
+    await productsCollectionRef.update({ categories });
+
+    res.status(200).json({ message: 'Category updated successfully' });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+app.put('/edit-subcategory', async (req, res) => {
+  const { selectedCat, oldSubCategory, newSubcategory2 } = req.body;
+  // console.log("old and new:", selectedCat, oldSubCategory, newSubcategory2)
+  // The ID of the document containing the categories array
+  const productsCollectionRef = firestore.collection('subcategories2').doc(selectedCat);
+  try {
+    const doc = await productsCollectionRef.get();
+    if (!doc.exists) {
+      res.status(404).json({ error: 'Document not found' });
+      return;
+    }
+    let { subcategories } = doc.data();
+    const subcategoryIndex = subcategories.indexOf(oldSubCategory);
+
+    if (subcategoryIndex === -1) {
+      res.status(404).json({ error: 'Sub Category not found' });
+      return;
+    }
+    subcategories[subcategoryIndex] = newSubcategory2;
+    await productsCollectionRef.update({ subcategories });
+
+    res.status(200).json({ message: 'Sub Category updated successfully' });
+  } catch (error) {
+    console.error('Error updating sub category:', error);
+    res.status(500).json({ error: 'Failed to update sub category' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+export const addcategories = createAsyncThunk("add-categories", async () => {
+    // console.log("webslice categoried :", categories);
+    const response = await axios.post("http://localhost:3001/add-categories");
+    console.log("response data:", response.data);
+    return response.data;
+
+});
+export const addcategory = createAsyncThunk("add-category", async ({ category }) => {
+    console.log("new category :", category);
+    const response = await axios.post("http://localhost:3001/add-category", { category });
+    console.log("response data:", response.data);
+    return response.data;
+
+});
+export const addsubcategory = createAsyncThunk("add-subcategory", async ({ category, subcategory }) => {
+    console.log("Adding new subcategory to category:", category, "subcategory:", subcategory);
+    const response = await axios.post("http://localhost:3001/add-subcategory", { category, subcategory });
+    console.log("Response data:", response.data);
+    return response.data;
+});
+export const removecategory = createAsyncThunk('remove-category', async ({ category }) => {
+    try {
+        const response = await axios.post('http://localhost:3001/remove-category', { category });
+        console.log("response.data", response.data)
+        if (response.data.message === "Category removed successfully")
+            toast.success("Category removed successfully");
+        // else
+        // toast.error(response.data.message);
+        return response.data;
+    } catch (error) {
+        throw error; // Let Redux handle the error
+    }
+}
+);
+export const removesubcategory = createAsyncThunk("remove-subcategory", async ({ category, subcategory }) => {
+    console.log("Adding new subcategory to category:", category, "subcategory:", subcategory);
+    const response = await axios.post("http://localhost:3001/remove-subcategory", { category, subcategory });
+    console.log("response data:", response.data);
+    if (response.data.message === "Subcategory removed successfully")
+        toast.success("Subcategory removed successfully");
+
+    return response.data;
+
+});
+
+export const updatecategory = createAsyncThunk("update-category", async ({ name, category }) => {
+    try{
+    console.log("update category& uid :", name, category);    
+    const token = localStorage.getItem('token');
+    const response = await axios.put("http://localhost:3001/update-category", { name, category },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+    }
+    catch (error) {
+        if (error.response) {
+            console.log("Error response data:", error.response.data);
+            return error.response.data;
+        }
+    }
+});
+export const updatesubcategory = createAsyncThunk("update-subcategory", async ({ uid, subcategory }) => {
+    console.log("update subcategory& uid :", uid, subcategory);
+    const response = await axios.put("http://localhost:3001/update-subcategory", { uid, subcategory });
+    console.log("response data:", response.data);
+    return response.data;
+});
+export const getcategories = createAsyncThunk("get-categories", async () => {
+    const response = await axios.get("http://localhost:3001/get-categories");
+    console.log("response data:", response.data);
+    return response.data;
+
+});
+export const addSubcategories = createAsyncThunk("add-subcategories", async () => {
+    // console.log("webslice sub categoried :", subcategories);
+    const response = await axios.post("http://localhost:3001/add-subcategories");
+    console.log("response data:", response.data);
+    return response.data;
+});
+export const getsubcategories = createAsyncThunk("get-subcategories", async () => {
+    const response = await axios.get("http://localhost:3001/get-subcategories");
+    console.log("response data sub cate:", response.data);
+    return response.data;
+
+});
+export const editCategoryy = createAsyncThunk("edit-category", async ({ oldCategory, newCategory }) => {
+    console.log("edit category:", oldCategory, newCategory);
+    const response = await axios.put("http://localhost:3001/edit-category", { oldCategory, newCategory });
+    console.log("response data:", response.data);
+    return response.data;
+});
+
+
+export const editSubCategory = createAsyncThunk("edit-subcategory", async ({ selectedCat, oldSubCategory, newSubcategory2 }) => {
+    console.log("edit sub category :", oldSubCategory, newSubcategory2);
+    const response = await axios.put("http://localhost:3001/edit-subcategory", { selectedCat, oldSubCategory, newSubcategory2 });
+    console.log("response data:", response.data);
+    return response.data;
+});

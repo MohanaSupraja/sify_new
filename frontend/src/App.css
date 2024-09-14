@@ -1,0 +1,48 @@
+.product-image {
+  max-height: 50px;
+  transition: transform 0.3s ease;
+}
+
+.product-image:hover {
+  transform: scale(2);
+}
+
+
+.css-3dzjca-MuiPaper-root-MuiPopover-paper-MuiMenu-paper {
+  max-height: calc(100% - 396px) !important;
+}
+
+.css-oibfen-MuiButtonBase-root-MuiListItem-root{
+  padding-top: 0px !important ;
+  padding-bottom: 0px !important;
+
+}
+.css-8h8jwv-MuiListItem-root{
+  padding :3px 10px 3px 10px !important;
+}
+.css-1x3g0ah-MuiButtonBase-root-MuiListItem-root{
+  padding: 0px 16px !important;
+}
+.css-1ex1afd-MuiTableCell-root {
+  padding: 8px 16px !important;
+
+}
+.css-11sptls-MuiTableCell-root {
+  padding: 8px 16px !important;
+}
+.css-1livng5-MuiTableCell-root {
+  padding: 8px 16px !important;
+}
+.css-l78ben-MuiTableCell-root{
+  padding: 8px 16px !important;
+}
+.css-1t8l2tu-MuiInputBase-input-MuiOutlinedInput-input {
+  padding:10px 12px !important;
+}
+.css-th3k4p-MuiTableCell-root {
+  padding:0px 16px !important;
+}
+.custom-toast .Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #C26B64 !important; /* Example: Gold color */
+}
+
